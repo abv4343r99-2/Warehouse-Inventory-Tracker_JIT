@@ -90,8 +90,21 @@ private static String unescape(String s) {
 return s.replace("\\,", ",").replace("\\\\", "\\");
 }
 
+AlterService.java
 
 @Override
 public String toString() {
 return "Product{" + "id=" + id + ", name='" + name + '\'' + ", qty=" + quantity + ", thr=" + reorderThreshold + '}';
 }
+
+ConsoleAlertService.java
+public class ConsoleAlertService implements AlertService {
+@Override
+public void onLowStock(Product product) {
+System.out.println("[ALERT] Low stock for " + product.getName() + " — only " + product.getQuantity() + " left!");
+}
+}
+
+
+
+
