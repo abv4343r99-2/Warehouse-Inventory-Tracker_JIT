@@ -1,6 +1,5 @@
 # Warehouse-Inventory-Tracker_JIT
-This document contains a step-by-step design, full Java source code, run instructions, and Git commands to create a GitHub repository. Use it as a ready-made project you can copy into files and push to GitHub.
-Overview
+
 
 A lightweight in-memory Warehouse Inventory Tracker that:
 
@@ -102,6 +101,82 @@ public class ConsoleAlertService implements AlertService {
 @Override
 public void onLowStock(Product product) {
 System.out.println("[ALERT] Low stock for " + product.getName() + " — only " + product.getQuantity() + " left!");
+}
+}
+WAREHOUSE.java
+private final List<AlertService> observers = new ArrayList<>();
+
+
+public Warehouse(String name) { this.name = name; }
+
+
+public String getName() { return name; }
+
+
+public synchronized void addObserver(AlertService observer) {
+observers.add(observer);
+}
+
+
+public synchronized void removeObserver(AlertService observer) {
+observers.remove(observer);
+}
+
+
+public synchronized void addProduct(Product product) {
+if (products.containsKey(product.getId())) {
+throw new IllegalArgumentException("Product with id " + product.getId() + " already exists.");
+}
+products.put(product.getId(), product);
+}
+
+
+public synchronized void receiveShipment(int productId, int amount) {
+Product p = products.get(productId);
+if (p == null) throw new NoSuchElementException("No product with id " + productId);
+p.increase(amount);
+// No need to notify on increase except if useful
+}
+
+
+public synchronized void fulfillOrder(int productId, int amount) {
+Product p = products.get(productId);
+if (p == null) throw new NoSuchElementException("No product with id " + productId);
+boolean ok = p.decrease(amount);
+if (!ok) throw new IllegalStateException("Insufficient stock for product " + productId);
+
+
+if (p.getQuantity() < p.getReorderThreshold()) {
+notifyLowStock(p);
+}
+}
+
+
+private synchronized void notifyLowStock(Product p) {
+for (AlertService obs : observers) {
+try {
+obs.onLowStock(p);
+} catch (Exception e) {
+System.err.println("Error in observer: " + e.getMessage());
+}
+}
+}
+
+
+public synchronized Product getProduct(int productId) {
+Product p = products.get(productId);
+if (p == null) throw new NoSuchElementException("No product with id " + productId);
+return p;
+}
+
+
+public synchronized List<Product> listProducts() {
+return new ArrayList<>(products.values());
+}
+
+
+public synchronized Map<Integer, Product> exportProductsMap() {
+return new HashMap<>(products);
 }
 }
 
